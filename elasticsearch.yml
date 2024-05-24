@@ -1,0 +1,14 @@
+---
+- name: "Install Elasticsearch"
+  hosts: elasticsearch
+  become: true
+
+  vars_files:
+    - /etc/ansible/vault/elasticsearch.yml
+  
+  roles:
+    - initial_setup
+    - firewall_config_elastic
+    - security_config
+    - zabbix_agent
+    - elasticsearch

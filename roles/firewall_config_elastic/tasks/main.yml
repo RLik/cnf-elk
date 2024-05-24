@@ -1,0 +1,21 @@
+---
+
+- name: "[Firewall Config Elasticsearch] Configure firewall TCP"
+  ansible.builtin.firewalld:
+    state: enabled
+    port: "{{ item }}/tcp"
+    zone: public
+    immediate: yes
+    permanent: yes
+  with_items: "{{ allowed_tcp_ports }}"
+  when: allowed_tcp_ports is defined
+
+- name: "[Firewall Config Elasticsearch] Configure firewall UDP"
+  ansible.builtin.firewalld:
+    state: enabled
+    port: "{{ item }}/udp"
+    zone: public
+    immediate: yes
+    permanent: yes
+  with_items: "{{ allowed_udp_ports }}"
+  when: allowed_udp_ports is defined

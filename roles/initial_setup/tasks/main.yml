@@ -1,0 +1,29 @@
+---
+- name: "[Initial Setup] Enable EPEL Repository"
+  ansible.builtin.dnf:
+    name: epel-release
+    state: latest
+
+- name: "[Initial Setup] trigger initial system wide update"
+  ansible.builtin.dnf:
+    name: '*'
+    state: latest
+
+- name: "[Initial Setup] Set timezone"
+  community.general.timezone:
+    name: Asia/Barnaul
+    
+- name: "[Initial Setup] Install required package"
+  ansible.builtin.package:
+    name:
+    - net-tools
+    - wget
+    - nano
+    - vim
+    - mc
+    - qemu-guest-agent
+    - htop
+    - python3-pip
+    - zip
+    - tar
+    state: present

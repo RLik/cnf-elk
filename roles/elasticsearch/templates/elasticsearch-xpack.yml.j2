@@ -1,0 +1,15 @@
+# Module: elasticsearch
+# Docs: https://www.elastic.co/guide/en/beats/metricbeat/8.13/metricbeat-module-elasticsearch.html
+
+- module: elasticsearch
+  xpack.enabled: true
+  period: 10s
+  hosts: ["https://localhost:9200"]
+  ssl:
+    enabled: true
+    ca_trusted_fingerprint: "{{ ca_cert_thumb.stdout }}"
+
+  # Authentication credentials - either API key or username/password.
+  #api_key: "id:api_key"
+  username: "{{ metricbeat_user }}"
+  password: "{{ metricbeat_user_password }}"

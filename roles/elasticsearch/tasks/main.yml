@@ -1,0 +1,155 @@
+---
+
+- name: "[Elasticsearch] Disable swap"
+  ansible.builtin.shell: swapoff -a
+
+- name: "[Elasticsearch] Disable swap in fstab"
+  ansible.builtin.lineinfile:
+    path: /etc/fstab
+    regexp: ^(.*\s*.*\s*swap.*)
+    line: '# \1'
+    backrefs: yes
+    state: present
+
+- name: "[Elasticsearch] Optimize TCP parameters"
+  ansible.builtin.shell: sysctl -w net.ipv4.tcp_retries2=5
+
+- name: "[Elasticsearch] Optimize TCP parameters (permanent)"
+  ansible.builtin.lineinfile:
+    path: /etc/sysctl.d/99-sysctl.conf
+    regexp: ^net.ipv4.tcp_retries2=5$
+    line: net.ipv4.tcp_retries2=5
+    state: present
+
+- name: "[Elasticsearch] Check Elasticsearch package info"
+  ansible.builtin.shell: rpm -q elasticsearch
+  register: elastic_info
+  ignore_errors: true
+  failed_when: false
+
+- name: "[Elasticsearch] Download Elasticsearch package"
+  ansible.builtin.get_url:
+    url: "{{ elastic_package_url }}"
+    dest: /tmp
+  register: elastic_package
+  when: elastic_info.rc != 0
+
+- name: "[Elasticsearch] Query current version of Elastic package"
+  ansible.builtin.shell: rpm -q --queryformat '%{version}\n' elasticsearch
+  register: current_elastic_package_version
+  ignore_errors: true
+  failed_when: false
+
+- name: "[Elasticsearch] Installing Elasticsearch package"
+  ansible.builtin.dnf:
+    name: "{{ elastic_package.dest }}"
+    state: latest
+    disable_gpg_check: true
+  when: elastic_info.rc != 0 and current_elastic_package_version.stdout != elastic_package_version
+
+- name: "[Elasticsearch] Start and enable Elasticsearch service"
+  ansible.builtin.service:
+    name: elasticsearch.service
+    state: started
+    enabled: true
+
+- name: "[Elasticsearch] Test elastic user connection to Elasticsearch server"
+  ansible.builtin.uri:
+    url: "https://localhost:9200/"
+    user: "elastic"
+    password: "{{elastic_user_password}}"
+    validate_certs: false
+    force_basic_auth: true
+  register: test_connection
+  ignore_errors: true
+  failed_when: false
+
+- name: "[Elasticsearch] Setup elastic user password"
+  ansible.builtin.shell: printf "{{elastic_user_password}}\n{{elastic_user_password}}" | /usr/share/elasticsearch/bin/elasticsearch-reset-password -b -i -u elastic
+  when: test_connection.status == 401
+
+- name: "[Elasticsearch] Copy config file"
+  ansible.builtin.copy:
+    src: elasticsearch.yml
+    dest: /etc/elasticsearch/elasticsearch.yml
+    force: true
+
+- name: "[Elasticsearch] Restart Elasticsearch service"
+  ansible.builtin.service:
+    name: elasticsearch.service
+    state: restarted
+
+- name: "[Elasticsearch] Wait while Elkasticsearch is up and running"
+  ansible.builtin.wait_for:
+    host: localhost
+    port: 9200
+    state: started
+    delay: 20
+    timeout: 240
+
+- name: "[Elasticsearch] Check Metricbeat package info"
+  ansible.builtin.shell: rpm -q metricbeat
+  register: metricbeat_info
+  ignore_errors: true
+  failed_when: false
+
+- name: "[Elasticsearch] Download Metricbeat package"
+  ansible.builtin.get_url:
+    url: "{{ metricbeat_package_url }}"
+    dest: /tmp
+  register: metricbeat_package
+  when: metricbeat_info.rc != 0
+
+- name: "[Elasticsearch] Query current version of Metricbeat package"
+  ansible.builtin.shell: rpm -q --queryformat '%{version}\n' metricbeat
+  register: current_metricbeat_package_version
+  ignore_errors: true
+  failed_when: false
+
+- name: "[Elasticsearch] Installing Metricbeat package"
+  ansible.builtin.dnf:
+    name: "{{ metricbeat_package.dest }}"
+    state: latest
+    disable_gpg_check: true
+  when: metricbeat_info.rc != 0 and current_metricbeat_package_version.stdout != metricbeat_package_version
+
+- name: "[Elasticsearch] Enable Metricbeat module"
+  ansible.builtin.shell: metricbeat modules enable elasticsearch-xpack
+
+- name: "[Elasticsearch] Get CA certificate thumbprint"
+  ansible.builtin.shell: grep -v ^- /etc/elasticsearch/certs/http_ca.crt | base64 -d | sha256sum | awk '{print $1}'
+  register: ca_cert_thumb
+
+- name: "[Elasticsearch] Copy Metricbeat module configuration file"
+  ansible.builtin.template:
+    src: "elasticsearch-xpack.yml.j2"
+    dest: "/etc/metricbeat/modules.d/elasticsearch-xpack.yml"
+
+- name: "[Elasticsearch] Copy Metricbeat configuration file"
+  ansible.builtin.template:
+    src: "metricbeat.yml.j2"
+    dest: "/etc/metricbeat/metricbeat.yml"
+
+- name: "[Elasticsearch] Restart Metricbeat service"
+  ansible.builtin.service:
+    name: metricbeat
+    state: restarted
+
+- name: "[Elasticsearch] Final test connection to Elasticsearch server"
+  ansible.builtin.uri:
+    url: "https://localhost:9200/"
+    user: "elastic"
+    password: "{{elastic_user_password}}"
+    validate_certs: false
+    force_basic_auth: true
+
+- name: "[Elasticsearch] Create user for Metricbeat"
+  ansible.builtin.uri:
+    url: "https://localhost:9200/_security/user/{{ metricbeat_user }}"
+    user: "elastic"
+    password: "{{elastic_user_password}}"
+    method: POST
+    body_format: "json"
+    body: "{\"password\" : \"{{ metricbeat_user_password }}\",\"roles\" : [ \"remote_monitoring_collector\", \"remote_monitoring_agent\" ],\"full_name\" : \"mbeat\"}}"
+    validate_certs: false
+    force_basic_auth: true

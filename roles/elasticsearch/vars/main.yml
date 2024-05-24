@@ -1,0 +1,17 @@
+---
+# URL Elasticsearch package location
+elastic_package_url: "http://nginx.infoplex.ru/elasticsearch-8.13.2-x86_64.rpm"
+elastic_package_version: "{{ elastic_package_url | regex_search('\\d\\.\\d+\\.\\d+') }}"
+
+# URL Metricbeat package location
+metricbeat_package_url: "http://nginx.infoplex.ru/metricbeat-8.13.2-x86_64.rpm"
+metricbeat_package_version: "{{ metricbeat_package_url | regex_search('\\d\\.\\d+\\.\\d+') }}"
+
+# Password of "elastic" user
+elastic_user_password: "{{ lookup('env','ELASTIC_USER_PWD') }}"
+
+# Username for user for Metricbeat
+metricbeat_user: mbeat
+
+# Password of user for Metricbeat
+metricbeat_user_password: "{{ lookup('env','METRICBEAT_USER_PWD') }}"

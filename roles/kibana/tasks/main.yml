@@ -1,0 +1,101 @@
+---
+- name: "[Kibana] Check Kibana package info"
+  ansible.builtin.shell: rpm -q kibana
+  register: kibana_info
+  ignore_errors: true
+  failed_when: false
+
+- name: "[Kibana] Download Kibana package"
+  ansible.builtin.get_url:
+    url: "{{ kibana_package_url }}"
+    dest: /tmp
+  register: elastic_package
+  when: kibana_info.rc != 0
+
+- name: "[Kibana] Query current version of Kibana package"
+  ansible.builtin.shell: rpm -q --queryformat '%{version}\n' kibana
+  register: current_kibana_package_version
+  ignore_errors: true
+  failed_when: false
+
+- name: "[Kibana] Installing Kibana package"
+  ansible.builtin.dnf:
+    name: "{{ elastic_package.dest }}"
+    state: latest
+    disable_gpg_check: true
+  when: kibana_info.rc != 0 and current_kibana_package_version.stdout != kibana_package_version
+
+- name: "[Kibana] Start and enable Kibana service"
+  ansible.builtin.service:
+    name: kibana.service
+    state: started
+    enabled: true
+
+- name: "[Kibana] Enroll Kibana to Elasticsearch"
+  ansible.builtin.shell: "/usr/share/kibana/bin/kibana-setup --enrollment-token {{ kibana_enrolment_token }}"
+
+- name: "[Kibana] Copy SSL certificate and key"
+  ansible.builtin.copy:
+    src: "{{ item.src }}"
+    dest: "{{ item.dest }}"
+    owner: root
+    group: kibana
+    mode: '0440'
+    force: true
+  with_items:
+    - { src: '/etc/ansible/config/ssl/infoplex.crt', dest: "{{ ssl_certificate }}" }
+    - { src: '/etc/ansible/config/ssl/infoplex.key', dest: "{{ ssl_key }}" }
+
+- name: "[Kibana] Change configuration to listen connections on all IP addresses"
+  ansible.builtin.lineinfile:
+    path: "{{ kibana_config_file_location }}"
+    regexp: "^server.host"
+    line: "server.host: 0.0.0.0"
+
+- name: "[Kibana] Change configuration to enable SSL"
+  ansible.builtin.lineinfile:
+    path: "{{ kibana_config_file_location }}"
+    regexp: "^server.ssl.enabled"
+    line: "server.ssl.enabled: true"
+
+- name: "[Kibana] Change configuration to specify SSL certificate location"
+  ansible.builtin.lineinfile:
+    path: "{{ kibana_config_file_location }}"
+    regexp: "^server.ssl.certificate"
+    line: "server.ssl.certificate: {{ ssl_certificate }}"
+
+- name: "[Kibana] Change configuration to specify SSL key location"
+  ansible.builtin.lineinfile:
+    path: "{{ kibana_config_file_location }}"
+    regexp: "^server.ssl.key"
+    line: "server.ssl.key: {{ ssl_key }}"
+
+- name: "[Kibana] Change configuration to specify listen hostname"
+  ansible.builtin.lineinfile:
+    path: "{{ kibana_config_file_location }}"
+    regexp: "^server.publicBaseUrl"
+    line: "server.publicBaseUrl: '{{ kibana_listen_url }}'"
+
+- name: "[Kibana] Change configuration to specify Enterprisesearch host location"
+  ansible.builtin.lineinfile:
+    path: "{{ kibana_config_file_location }}"
+    regexp: "^enterpriseSearch.host:"
+    line: "enterpriseSearch.host: '{{ enterprisesearch_listen_url }}'"
+
+- name: "[Kibana] Waiting before start Kibana service"
+  ansible.builtin.wait_for:
+    timeout: 15
+
+- name: "[Kibana] Restart Kibana service"
+  ansible.builtin.service:
+    name: kibana.service
+    state: restarted
+    enabled: true
+
+- name: "[Kibana] Wait while Kibana is up and running"
+  ansible.builtin.wait_for:
+    host: 0.0.0.0
+    port: 5601
+    state: started
+    delay: 20
+    timeout: 60

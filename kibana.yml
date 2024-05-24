@@ -1,0 +1,34 @@
+- name: "Get Elasticsearch token for Kibana"
+  hosts: elasticsearch
+  become: true
+
+  vars_files:
+    - /etc/ansible/vault/elasticsearch.yml
+
+  tasks:
+    - name: "Get Kibana enrollment token"
+      shell: /usr/share/elasticsearch/bin/elasticsearch-create-enrollment-token -s kibana
+      register: kibana_token
+
+    - name: "Add Kibana enrollment token to dummy host"
+      add_host:
+        name:   "token_holder_host"
+        token:  "{{ kibana_token.stdout }}"
+
+- name: "Install Kibana"
+  hosts: kibana
+  become: true
+
+  vars_files:
+    - /etc/ansible/vault/kibana.yml
+ 
+  vars:
+    - kibana_enrolment_token: "{{ hostvars['token_holder_host']['token'] }}"
+  
+  roles:
+    - initial_setup
+    - firewall_config_kibana_fleet_logstash
+    - security_config
+    - zabbix_agent
+    - enterprisesearch
+    - kibana

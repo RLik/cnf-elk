@@ -1,0 +1,30 @@
+---
+- name: "[Security Config] Disable password authentication for root"
+  ansible.builtin.lineinfile:
+    path: /etc/ssh/sshd_config
+    state: present
+    regexp: '^#?PermitRootLogin'
+    line: 'PermitRootLogin prohibit-password'
+  notify: restart ssh
+
+- name: "[Security Config] Install fail2ban"
+  ansible.builtin.yum: 
+    name: fail2ban
+    state: present
+    enablerepo: epel
+
+- name: "[Security Config] Ensure fail2ban is running and enabled on boot"
+  ansible.builtin.service:
+    name: fail2ban
+    state: started
+    enabled: yes
+
+- name: "[Security Config] Create local configuration jail for fail2ban"
+  ansible.builtin.copy:
+    src: jail.conf
+    dest: /etc/fail2ban/jail.local
+
+- name: "[Security Config] Restart fail2ban"
+  ansible.builtin.service:
+    name: fail2ban
+    state: restarted

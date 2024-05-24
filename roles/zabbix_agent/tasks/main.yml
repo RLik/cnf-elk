@@ -1,0 +1,37 @@
+---
+- name: Disable Zabbix packages provided by EPEL
+  ansible.builtin.lineinfile:
+    insertafter: '\[epel\]'
+    line: excludepkgs=zabbix*
+    path: /etc/yum.repos.d/epel.repo
+
+- name: Download repository install package
+  ansible.builtin.get_url:
+    url: "{{ zabbix_repo_package_url_rocky9 }}"
+    dest: /tmp
+  register: source_file
+
+- name: Install Zabbix repository package
+  ansible.builtin.dnf:
+   name: "{{ source_file.dest }}"
+   state: present
+   disable_gpg_check: true
+
+- name: Install Zabbix Agent 2
+  ansible.builtin.yum:
+    name:
+    - zabbix-agent2
+    - zabbix-agent2-plugin-*
+    state: present
+
+- name: Restart and enable Zabbix Agent
+  ansible.builtin.service:
+    name: zabbix-agent2
+    state: restarted
+    enabled: true
+
+- name: Add Zabbix server address to agent configuration file
+  ansible.builtin.lineinfile:
+    line: Server=192.168.56.156
+    path: /etc/zabbix/zabbix_agent2.conf
+    regexp: '^#?Server='

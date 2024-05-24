@@ -1,0 +1,93 @@
+---
+- name: "[Enterprise Search] Install Java runtime"
+  ansible.builtin.package:
+    name: java-11-openjdk
+    state: present
+
+- name: "[Enterprise Search] Check Enterprise Search package info"
+  ansible.builtin.shell: rpm -q enterprise-search
+  register: enterprise_search_info
+  ignore_errors: true
+  failed_when: false
+
+- name: "[Enterprise Search] Download Enterprise Search package"
+  ansible.builtin.get_url:
+    url: "{{ enterprise_search_package_url }}"
+    dest: /tmp
+  register: enterprise_search_package
+  when: enterprise_search_info.rc != 0
+
+- name: "[Enterprise Search] Query current version of Enterprise Search package"
+  ansible.builtin.shell: rpm -q --queryformat '%{version}\n' enterprise-search
+  register: current_enterprise_search_package_version
+  ignore_errors: true
+  failed_when: false
+
+- name: "[Enterprise Search] Installing Enterprise Search package"
+  ansible.builtin.dnf:
+    name: "{{ enterprise_search_package.dest }}"
+    state: latest
+    disable_gpg_check: true
+  when: enterprise_search_info.rc != 0 and current_enterprise_search_package_version.stdout != kibana_package_version
+
+- name: "[Enterprise Search] Change configuration to allow modificaton in Elasticsearch config"
+  ansible.builtin.lineinfile:
+    path: "{{ es_config_file_location }}"
+    regexp: "^allow_es_settings_modification"
+    line: "allow_es_settings_modification: true"
+
+- name: "[Enterprise Search] Change configuration to specify Elasticsearch URL"
+  ansible.builtin.lineinfile:
+    path: "{{ es_config_file_location }}"
+    regexp: "^elasticsearch.host"
+    line: "elasticsearch.host: {{ elasticsearch_url }}"
+
+- name: "[Enterprise Search] Change configuration to specify Elasticsearch user"
+  ansible.builtin.lineinfile:
+    path: "{{ es_config_file_location }}"
+    regexp: "^elasticsearch.username"
+    line: "elasticsearch.username: {{ elastic_user }}"
+
+- name: "[Enterprise Search] Change configuration to specify Elasticsearch user password"
+  ansible.builtin.lineinfile:
+    path: "{{ es_config_file_location }}"
+    regexp: "^elasticsearch.password"
+    line: "elasticsearch.password: {{ elastic_user_password }}"
+
+- name: "[Enterprise Search] Change configuration to enable SSL communication with Elasticsearch"
+  ansible.builtin.lineinfile:
+    path: "{{ es_config_file_location }}"
+    regexp: "^elasticsearch.ssl.enabled"
+    line: "elasticsearch.ssl.enabled: true"
+
+- name: "[Enterprise Search] Change configuration to disable SSL certificate check while communicate with Elasticsearch"
+  ansible.builtin.lineinfile:
+    path: "{{ es_config_file_location }}"
+    regexp: "^elasticsearch.ssl.verify"
+    line: "elasticsearch.ssl.verify: false"
+
+- name: "[Enterprise Search] Change configuration to specify Kibana URL"
+  ansible.builtin.lineinfile:
+    path: "{{ es_config_file_location }}"
+    regexp: "^kibana.host"
+    line: "kibana.host: {{ kibana_listen_url }}"
+
+- name: "[Enterprise Search] Change configuration to specify encryption key"
+  ansible.builtin.lineinfile:
+    path: "{{ es_config_file_location }}"
+    regexp: "^secret_management.encryption_keys"
+    line: "secret_management.encryption_keys: [{{ es_encryption_key }}]"
+
+- name: "[Enterprise Search] Start and enable Enterprise Search service"
+  ansible.builtin.service:
+    name: enterprise-search.service
+    state: restarted
+    enabled: true
+
+- name: "[Enterprise Search] Wait while Enterprise Search is up and running"
+  ansible.builtin.wait_for:
+    host: localhost
+    port: 3002
+    state: started
+    delay: 20
+    timeout: 120

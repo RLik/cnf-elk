@@ -1,0 +1,25 @@
+---
+# URL Kibana package location
+kibana_package_url: "http://nginx.infoplex.ru/kibana-8.13.2-x86_64.rpm"
+kibana_package_version: "{{ kibana_package_url | regex_search('\\d\\.\\d+\\.\\d+') }}"
+
+# Password of "elastic" user
+elastic_user_password: "{{ lookup('env','ELASTIC_USER_PWD') }}"
+
+# URL of Elasticsearch server
+elasticsearch_url: "https://elk01.plex.local:9200"
+
+# Location of SSL certificate on Kibana server
+ssl_certificate: /etc/kibana/cert.crt
+
+# Location of SSL certificate key on Kibana server
+ssl_key: /etc/kibana/priv.key
+
+# Kibana listen url
+kibana_listen_url: 'https://kibana.infoplex.ru'
+
+# Kibana listen url
+enterprisesearch_listen_url: 'http://localhost:3002'
+
+# Location of Kibana configuration file
+kibana_config_file_location: "/etc/kibana/kibana.yml"

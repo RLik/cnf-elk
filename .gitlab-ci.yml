@@ -1,0 +1,40 @@
+stages:
+  - "pre_check"
+  - "deploy_elasticsearch"
+  - "deploy_kibana"
+
+elasticsearch_config_check:
+  stage: pre_check
+  script:
+    - echo $ANSIBLE_VAULT_PASSWORD > .vault_password.txt
+    - chmod 400 .vault_password.txt
+    - ansible-playbook -i inventory/inv.ini --vault-password-file .vault_password.txt elasticsearch.yml --syntax-check
+  after_script:
+    - rm .vault_password.txt
+
+kibana_config_check:
+  stage: pre_check
+  script:
+    - echo $ANSIBLE_VAULT_PASSWORD > .vault_password.txt
+    - chmod 400 .vault_password.txt
+    - ansible-playbook -i inventory/inv.ini --vault-password-file .vault_password.txt kibana.yml --syntax-check
+  after_script:
+    - rm .vault_password.txt
+
+elasticsearch_config_deploy:
+  stage: deploy_elasticsearch
+  script:
+    - echo $ANSIBLE_VAULT_PASSWORD > .vault_password.txt
+    - chmod 400 .vault_password.txt
+    - ansible-playbook -i inventory/inv.ini --vault-password-file .vault_password.txt elasticsearch.yml
+  after_script:
+    - rm .vault_password.txt
+
+kibana_config_deploy:
+  stage: deploy_kibana
+  script:
+    - echo $ANSIBLE_VAULT_PASSWORD > .vault_password.txt
+    - chmod 400 .vault_password.txt
+    - ansible-playbook -i inventory/inv.ini --vault-password-file .vault_password.txt kibana.yml
+  after_script:
+    - rm .vault_password.txt
