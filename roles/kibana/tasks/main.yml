@@ -43,8 +43,8 @@
     mode: '0440'
     force: true
   with_items:
-    - { src: '/etc/ansible/config/ssl/infoplex.crt', dest: "{{ ssl_certificate }}" }
-    - { src: '/etc/ansible/config/ssl/infoplex.key', dest: "{{ ssl_key }}" }
+    - { src: '/etc/ansible/config/ssl/itproblog.crt', dest: "{{ ssl_certificate }}" }
+    - { src: '/etc/ansible/config/ssl/itproblog.key', dest: "{{ ssl_key }}" }
 
 - name: "[Kibana] Change configuration to listen connections on all IP addresses"
   ansible.builtin.lineinfile:

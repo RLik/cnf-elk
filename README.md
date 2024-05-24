@@ -52,15 +52,15 @@ sudo chmod 650 /etc/ansible/vault/
 - [ ] Create directory for storing SSL cert and keys files. Add contents of SSL crt and key files (or just copy this files to server):
 ```
 sudo mkdir -p /etc/ansible/config/ssl
-sudo nano /etc/ansible/config/ssl/infoplex.key
-sudo nano /etc/ansible/config/ssl/infoplex.crt
+sudo nano /etc/ansible/config/ssl/itproblog.key
+sudo nano /etc/ansible/config/ssl/itproblog.crt
 ```
 - [ ] Chnage the owner of certificate files
 ```
-sudo chown root:gitlab-runner /etc/ansible/config/ssl/infoplex.key
-sudo chown root:gitlab-runner /etc/ansible/config/ssl/infoplex.crt
-sudo chmod 640 /etc/ansible/config/ssl/infoplex.key
-sudo chmod 640 /etc/ansible/config/ssl/infoplex.crt
+sudo chown root:gitlab-runner /etc/ansible/config/ssl/itproblog.key
+sudo chown root:gitlab-runner /etc/ansible/config/ssl/itproblog.crt
+sudo chmod 640 /etc/ansible/config/ssl/itproblog.key
+sudo chmod 640 /etc/ansible/config/ssl/itproblog.crt
 sudo chown root:gitlab-runner /etc/ansible/config/ssl
 sudo chmod 650 /etc/ansible/config/ssl
 ```

@@ -1,6 +1,6 @@
 ---
 # URL Kibana package location
-kibana_package_url: "http://nginx.infoplex.ru/kibana-8.13.2-x86_64.rpm"
+kibana_package_url: "http://nginx.itproblog.ru/kibana-8.13.2-x86_64.rpm"
 kibana_package_version: "{{ kibana_package_url | regex_search('\\d\\.\\d+\\.\\d+') }}"
 
 # Password of "elastic" user
@@ -16,7 +16,7 @@ ssl_certificate: /etc/kibana/cert.crt
 ssl_key: /etc/kibana/priv.key
 
 # Kibana listen url
-kibana_listen_url: 'https://kibana.infoplex.ru'
+kibana_listen_url: 'https://kibana.itproblog.ru'
 
 # Kibana listen url
 enterprisesearch_listen_url: 'http://localhost:3002'

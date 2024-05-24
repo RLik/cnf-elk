@@ -1,10 +1,10 @@
 ---
 # URL Elasticsearch package location
-elastic_package_url: "http://nginx.infoplex.ru/elasticsearch-8.13.2-x86_64.rpm"
+elastic_package_url: "http://nginx.itproblog.ru/elasticsearch-8.13.2-x86_64.rpm"
 elastic_package_version: "{{ elastic_package_url | regex_search('\\d\\.\\d+\\.\\d+') }}"
 
 # URL Metricbeat package location
-metricbeat_package_url: "http://nginx.infoplex.ru/metricbeat-8.13.2-x86_64.rpm"
+metricbeat_package_url: "http://nginx.itproblog.ru/metricbeat-8.13.2-x86_64.rpm"
 metricbeat_package_version: "{{ metricbeat_package_url | regex_search('\\d\\.\\d+\\.\\d+') }}"
 
 # Password of "elastic" user

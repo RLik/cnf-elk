@@ -1,6 +1,6 @@
 ---
 # URL Kibana package location
-enterprise_search_package_url: "http://nginx.infoplex.ru/enterprise-search-8.13.2.rpm"
+enterprise_search_package_url: "http://nginx.itproblog.ru/enterprise-search-8.13.2.rpm"
 enterprise_search_version: "{{ enterprise_search_package_url | regex_search('\\d\\.\\d+\\.\\d+') }}"
 
 # Password of "elastic" user
@@ -13,7 +13,7 @@ elastic_user_password: "{{ lookup('env','ELASTIC_USER_PWD') }}"
 elasticsearch_url: "https://elk01.plex.local:9200"
 
 # Kibana listen url
-kibana_listen_url: 'https://kibana.infoplex.ru'
+kibana_listen_url: 'https://kibana.itproblog.ru'
 
 # Enterprise Search configuration file location
 es_config_file_location: "/usr/share/enterprise-search/config/enterprise-search.yml"
